@@ -700,6 +700,31 @@ nodist_fullscreen_shell_la_SOURCES =			\
 BUILT_SOURCES += $(nodist_fullscreen_shell_la_SOURCES)
 endif
 
+if ENABLE_IVI_SHELL
+
+module_LTLIBRARIES += ivi-shell.la
+
+ivi_shell_la_LDFLAGS = -module -avoid-version
+ivi_shell_la_LIBADD =				\
+	$(COMPOSITOR_LIBS)			\
+	$(IVI_SHELL_LIBS)			\
+	libshared.la
+ivi_shell_la_CFLAGS =				\
+	$(COMPOSITOR_CFLAGS)			\
+	$(IVI_SHELL_CFLAGS)			\
+	$(GCC_CFLAGS)
+ivi_shell_la_SOURCES =				\
+	ivi-shell/ivi-shell.h			\
+	ivi-shell/ivi-shell.c			\
+	ivi-shell/ivi-layout.h
+nodist_ivi_shell_la_SOURCES =				\
+	protocol/ivi-application-protocol.c		\
+	protocol/ivi-application-server-protocol.h
+
+BUILT_SOURCES += $(nodist_ivi_shell_la_SOURCES)
+
+endif
+
 if ENABLE_SCREEN_SHARING
 
 module_LTLIBRARIES += screen-share.la
