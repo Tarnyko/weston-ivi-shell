@@ -41,6 +41,10 @@
 #include <EGL/eglext.h>
 
 #include "xdg-shell-client-protocol.h"
+#include <sys/types.h>
+#include <unistd.h>
+#include "protocol/ivi-application-client-protocol.h"
+#define IVI_SURFACE_ID 9000
 
 #ifndef EGL_EXT_swap_buffers_with_damage
 #define EGL_EXT_swap_buffers_with_damage 1
@@ -74,6 +78,7 @@ struct display {
 		EGLConfig conf;
 	} egl;
 	struct window *window;
+	struct ivi_application *ivi_application;
 
 	PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
 };
@@ -95,6 +100,7 @@ struct window {
 	struct wl_egl_window *native;
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
+	struct ivi_surface *ivi_surface;
 	EGLSurface egl_surface;
 	struct wl_callback *callback;
 	int fullscreen, opaque, buffer_size, frame_sync;
@@ -254,7 +260,7 @@ init_gl(struct window *window)
 	}
 
 	glUseProgram(program);
-	
+
 	window->gl.pos = 0;
 	window->gl.col = 1;
 
@@ -333,13 +339,8 @@ create_surface(struct window *window)
 {
 	struct display *display = window->display;
 	EGLBoolean ret;
-	
-	window->surface = wl_compositor_create_surface(display->compositor);
-	window->xdg_surface = xdg_shell_get_xdg_surface(display->shell,
-							window->surface);
 
-	xdg_surface_add_listener(window->xdg_surface,
-				 &xdg_surface_listener, window);
+	window->surface = wl_compositor_create_surface(display->compositor);
 
 	window->native =
 		wl_egl_window_create(window->surface,
@@ -350,7 +351,28 @@ create_surface(struct window *window)
 				       display->egl.conf,
 				       window->native, NULL);
 
-	xdg_surface_set_title(window->xdg_surface, "simple-egl");
+	if (display->shell) {
+		window->xdg_surface = xdg_shell_get_xdg_surface(display->shell,
+								window->surface);
+
+		xdg_surface_add_listener(window->xdg_surface,
+					 &xdg_surface_listener, window);
+
+		xdg_surface_set_title(window->xdg_surface, "simple-egl");
+	} else if (display->ivi_application ) {
+		uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
+		window->ivi_surface =
+			ivi_application_surface_create(display->ivi_application,
+						       id_ivisurf, window->surface);
+		handle_surface_configure(window, NULL, 250, 250);
+
+		if (window->ivi_surface == NULL) {
+			fprintf(stderr, "Failed to create ivi_client_surface\n");
+			abort();
+		}
+	} else {
+		assert(0);
+	}
 
 	ret = eglMakeCurrent(window->display->egl.dpy, window->egl_surface,
 			     window->egl_surface, window->display->egl.ctx);
@@ -359,9 +381,12 @@ create_surface(struct window *window)
 	if (!window->frame_sync)
 		eglSwapInterval(display->egl.dpy, 0);
 
-	xdg_surface_request_change_state(window->xdg_surface,
-					 XDG_SURFACE_STATE_FULLSCREEN,
-					 window->fullscreen, 0);
+	if (display->shell)
+	{
+		xdg_surface_request_change_state(window->xdg_surface,
+						 XDG_SURFACE_STATE_FULLSCREEN,
+						 window->fullscreen, 0);
+	}
 }
 
 static void
@@ -536,8 +561,13 @@ pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 	struct display *display = data;
 
 	if (button == BTN_LEFT && state == WL_POINTER_BUTTON_STATE_PRESSED)
-		xdg_surface_move(display->window->xdg_surface,
-				 display->seat, serial);
+	{
+		if (display->shell)
+		{
+			xdg_surface_move(display->window->xdg_surface,
+					 display->seat, serial);
+		}
+	}
 }
 
 static void
@@ -730,6 +760,11 @@ registry_handle_global(void *data, struct wl_registry *registry,
 			// TODO: abort ?
 		}
 	}
+	else if (strcmp(interface, "ivi_application") == 0) {
+		d->ivi_application =
+			wl_registry_bind(registry, name,
+					 &ivi_application_interface, 1);
+	}
 }
 
 static void
@@ -824,6 +859,12 @@ main(int argc, char **argv)
 
 	fprintf(stderr, "simple-egl exiting\n");
 
+	if (window.display->ivi_application)
+	{
+		ivi_surface_destroy(window.ivi_surface);
+		ivi_application_destroy(window.display->ivi_application);
+	}
+
 	destroy_surface(&window);
 	fini_egl(&display);
 
@@ -838,6 +879,9 @@ main(int argc, char **argv)
 		wl_compositor_destroy(display.compositor);
 
 	wl_registry_destroy(display.registry);
+	if (window.display->ivi_application)
+		wl_display_roundtrip(display.display);
+
 	wl_display_flush(display.display);
 	wl_display_disconnect(display.display);
 
