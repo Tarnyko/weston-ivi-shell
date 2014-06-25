@@ -1376,7 +1376,7 @@ ivi_layout_getNumberOfHardwareLayers(uint32_t id_screen,
 }
 
 WL_EXPORT int32_t
-ivi_layout_getScreens(uint32_t *pLength, ivi_layout_screen_ptr **ppArray)
+ivi_layout_getScreens(uint32_t *pLength, struct ivi_layout_screen ***ppArray)
 {
     struct ivi_layout *layout = get_instance();
     struct ivi_layout_screen *iviscrn = NULL;
@@ -1392,7 +1392,7 @@ ivi_layout_getScreens(uint32_t *pLength, ivi_layout_screen_ptr **ppArray)
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_screen_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_screen *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1411,7 +1411,7 @@ ivi_layout_getScreens(uint32_t *pLength, ivi_layout_screen_ptr **ppArray)
 WL_EXPORT int32_t
 ivi_layout_getScreensUnderLayer(struct ivi_layout_layer *ivilayer,
                                    uint32_t *pLength,
-                                   ivi_layout_screen_ptr **ppArray)
+                                   struct ivi_layout_screen ***ppArray)
 {
     struct link_screen *link_scrn = NULL;
     uint32_t length = 0;
@@ -1426,7 +1426,7 @@ ivi_layout_getScreensUnderLayer(struct ivi_layout_layer *ivilayer,
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_screen_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_screen *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1443,7 +1443,7 @@ ivi_layout_getScreensUnderLayer(struct ivi_layout_layer *ivilayer,
 }
 
 WL_EXPORT int32_t
-ivi_layout_getLayers(uint32_t *pLength, ivi_layout_layer_ptr **ppArray)
+ivi_layout_getLayers(uint32_t *pLength, struct ivi_layout_layer ***ppArray)
 {
     struct ivi_layout *layout = get_instance();
     struct ivi_layout_layer *ivilayer = NULL;
@@ -1459,7 +1459,7 @@ ivi_layout_getLayers(uint32_t *pLength, ivi_layout_layer_ptr **ppArray)
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_layer_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_layer *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1478,7 +1478,7 @@ ivi_layout_getLayers(uint32_t *pLength, ivi_layout_layer_ptr **ppArray)
 WL_EXPORT int32_t
 ivi_layout_getLayersOnScreen(struct ivi_layout_screen *iviscrn,
                                 uint32_t *pLength,
-                                ivi_layout_layer_ptr **ppArray)
+                                struct ivi_layout_layer ***ppArray)
 {
     struct ivi_layout_layer *ivilayer = NULL;
     uint32_t length = 0;
@@ -1493,7 +1493,7 @@ ivi_layout_getLayersOnScreen(struct ivi_layout_screen *iviscrn,
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_layer_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_layer *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1512,7 +1512,7 @@ ivi_layout_getLayersOnScreen(struct ivi_layout_screen *iviscrn,
 WL_EXPORT int32_t
 ivi_layout_getLayersUnderSurface(struct ivi_layout_surface *ivisurf,
                                     uint32_t *pLength,
-                                    ivi_layout_layer_ptr **ppArray)
+                                    struct ivi_layout_layer ***ppArray)
 {
     struct link_layer *link_layer = NULL;
     uint32_t length = 0;
@@ -1527,7 +1527,7 @@ ivi_layout_getLayersUnderSurface(struct ivi_layout_surface *ivisurf,
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_layer_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_layer *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1544,7 +1544,7 @@ ivi_layout_getLayersUnderSurface(struct ivi_layout_surface *ivisurf,
 }
 
 WL_EXPORT int32_t
-ivi_layout_getSurfaces(uint32_t *pLength, ivi_layout_surface_ptr **ppArray)
+ivi_layout_getSurfaces(uint32_t *pLength, struct ivi_layout_surface ***ppArray)
 {
     struct ivi_layout *layout = get_instance();
     struct ivi_layout_surface *ivisurf = NULL;
@@ -1560,7 +1560,7 @@ ivi_layout_getSurfaces(uint32_t *pLength, ivi_layout_surface_ptr **ppArray)
 
     if (length != 0){
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_surface_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_surface *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;
@@ -1579,7 +1579,7 @@ ivi_layout_getSurfaces(uint32_t *pLength, ivi_layout_surface_ptr **ppArray)
 WL_EXPORT int32_t
 ivi_layout_getSurfacesOnLayer(struct ivi_layout_layer *ivilayer,
                                  uint32_t *pLength,
-                                 ivi_layout_surface_ptr **ppArray)
+                                 struct ivi_layout_surface ***ppArray)
 {
     struct ivi_layout_surface *ivisurf = NULL;
     uint32_t length = 0;
@@ -1594,7 +1594,7 @@ ivi_layout_getSurfacesOnLayer(struct ivi_layout_layer *ivilayer,
 
     if (length != 0) {
         /* the Array must be free by module which called this function */
-        *ppArray = calloc(length, sizeof(ivi_layout_surface_ptr));
+        *ppArray = calloc(length, sizeof(struct ivi_layout_surface *));
         if (*ppArray == NULL) {
             weston_log("fails to allocate memory\n");
             return -1;

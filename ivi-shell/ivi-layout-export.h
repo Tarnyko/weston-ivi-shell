@@ -106,10 +106,6 @@ struct ivi_layout_LayerProperties
 struct ivi_layout_layer;
 struct ivi_layout_screen;
 
-typedef struct ivi_layout_surface* ivi_layout_surface_ptr;
-typedef struct ivi_layout_layer*   ivi_layout_layer_ptr;
-typedef struct ivi_layout_screen*  ivi_layout_screen_ptr;
-
 enum ivi_layout_notification_mask {
     IVI_NOTIFICATION_NONE        = 0,
     IVI_NOTIFICATION_OPACITY     = (1 << 1),
@@ -393,7 +389,7 @@ ivi_layout_getNumberOfHardwareLayers(uint32_t id_screen,
  * \return -1 if the method call was failed
  */
 int32_t
-ivi_layout_getScreens(uint32_t *pLength, ivi_layout_screen_ptr **ppArray);
+ivi_layout_getScreens(uint32_t *pLength, struct ivi_layout_screen ***ppArray);
 
 /**
  * \brief Get the screens under the given layer
@@ -404,7 +400,7 @@ ivi_layout_getScreens(uint32_t *pLength, ivi_layout_screen_ptr **ppArray);
 int32_t
 ivi_layout_getScreensUnderLayer(struct ivi_layout_layer *ivilayer,
                                    uint32_t *pLength,
-                                   ivi_layout_screen_ptr **ppArray);
+                                   struct ivi_layout_screen ***ppArray);
 
 /**
  * \brief Get all Layers which are currently registered and managed by the services
@@ -413,7 +409,7 @@ ivi_layout_getScreensUnderLayer(struct ivi_layout_layer *ivilayer,
  * \return -1 if the method call was failed
  */
 int32_t
-ivi_layout_getLayers(uint32_t *pLength, ivi_layout_layer_ptr **ppArray);
+ivi_layout_getLayers(uint32_t *pLength, struct ivi_layout_layer ***ppArray);
 
 /**
  * \brief Get all Layers of the given screen
@@ -424,7 +420,7 @@ ivi_layout_getLayers(uint32_t *pLength, ivi_layout_layer_ptr **ppArray);
 int32_t
 ivi_layout_getLayersOnScreen(struct ivi_layout_screen *iviscrn,
                                 uint32_t *pLength,
-                                ivi_layout_layer_ptr **ppArray);
+                                struct ivi_layout_layer ***ppArray);
 
 /**
  * \brief Get all Layers under the given surface
@@ -435,7 +431,7 @@ ivi_layout_getLayersOnScreen(struct ivi_layout_screen *iviscrn,
 int32_t
 ivi_layout_getLayersUnderSurface(struct ivi_layout_surface *ivisurf,
                                     uint32_t *pLength,
-                                    ivi_layout_layer_ptr **ppArray);
+                                    struct ivi_layout_layer ***ppArray);
 
 /**
  * \brief Get all Surfaces which are currently registered and managed by the services
@@ -444,7 +440,7 @@ ivi_layout_getLayersUnderSurface(struct ivi_layout_surface *ivisurf,
  * \return -1 if the method call was failed
  */
 int32_t
-ivi_layout_getSurfaces(uint32_t *pLength, ivi_layout_surface_ptr **ppArray);
+ivi_layout_getSurfaces(uint32_t *pLength, struct ivi_layout_surface ***ppArray);
 
 /**
  * \brief Get all Surfaces which are currently registered to a given layer and are managed by the services
@@ -455,7 +451,7 @@ ivi_layout_getSurfaces(uint32_t *pLength, ivi_layout_surface_ptr **ppArray);
 int32_t
 ivi_layout_getSurfacesOnLayer(struct ivi_layout_layer *ivilayer,
                                  uint32_t *pLength,
-                                 ivi_layout_surface_ptr **ppArray);
+                                 struct ivi_layout_surface ***ppArray);
 
 /**
  * \brief Create a layer which should be managed by the service
