@@ -386,6 +386,16 @@ AM_CONDITIONAL(BUILD_SUBSURFACES_CLIENT,
 
 AM_CONDITIONAL(ENABLE_DESKTOP_SHELL, true)
 
+AC_ARG_ENABLE(ivi-shell,
+              AS_HELP_STRING([--disable-ivi-shell],
+                             [do not build ivi-shell server plugin and client]),,
+	      enable_ivi_shell=yes)
+AM_CONDITIONAL(ENABLE_IVI_SHELL,
+	       test "x$enable_ivi_shell" = "xyes")
+if test "x$enable_ivi_shell" = "xyes"; then
+	PKG_CHECK_MODULES(IVI_SHELL, [cairo])
+fi
+
 AC_ARG_ENABLE(fullscreen-shell,
               AS_HELP_STRING([--disable-fullscreen-shell],
                              [do not build fullscreen-shell server plugin]),,
@@ -522,6 +532,8 @@ AC_MSG_RESULT([
 	xcb_xkb				${have_xcb_xkb}
 	XWayland			${enable_xwayland}
 	dbus				${enable_dbus}
+
+	ivi-shell			${enable_ivi_shell}
 
 	Build wcap utility		${enable_wcap_tools}
 	Build Fullscreen Shell		${enable_fullscreen_shell}
