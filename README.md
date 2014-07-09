@@ -19,7 +19,5 @@ contact : TANIBATA Nabuhiko (https://github.com/ntanibata)</strong>
 * Compile Weston normally.
 
   Then, after having built and installed Weston, still at the root folder, install the ivi-shell-specific "weston.ini" configuration file like this :
-
-<strong>cp ivi-shell/weston.ini $HOME/.config/weston.ivi</strong>
-
- Run Weston.
+<strong>cp ivi-shell/weston.ini $HOME/.config/weston.ini</strong>
+  Run Weston.
