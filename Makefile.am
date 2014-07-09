@@ -983,7 +983,8 @@ EXTRA_DIST +=					\
 	protocol/wayland-test.xml		\
 	protocol/xdg-shell.xml			\
 	protocol/fullscreen-shell.xml		\
-	protocol/scaler.xml
+	protocol/scaler.xml			\
+	protocol/ivi-application.xml
 
 man_MANS = weston.1 weston.ini.5
 
