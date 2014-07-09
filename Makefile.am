@@ -1018,7 +1018,8 @@ EXTRA_DIST +=					\
 	protocol/xdg-shell.xml			\
 	protocol/fullscreen-shell.xml		\
 	protocol/scaler.xml			\
-	protocol/ivi-application.xml
+	protocol/ivi-application.xml		\
+	protocol/ivi-hmi-controller.xml
 
 man_MANS = weston.1 weston.ini.5
 
