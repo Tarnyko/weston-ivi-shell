@@ -14,10 +14,14 @@ contact : TANIBATA Nabuhiko (https://github.com/ntanibata)</strong>
 
 ![IVI-Shell screenshots](http://lists.freedesktop.org/archives/wayland-devel/attachments/20140625/abbfc064/attachment-0001.png)
 
+ (Video : http://www.youtube.com/watch?v=DO8oWvAPwhk)
+
 ## Installation
 
 * Compile Weston normally.
 
   Then, after having built and installed Weston, still at the root folder, install the ivi-shell-specific "weston.ini" configuration file like this :
+
 <strong>cp ivi-shell/weston.ini $HOME/.config/weston.ini</strong>
-  Run Weston.
+
+   Run Weston.
