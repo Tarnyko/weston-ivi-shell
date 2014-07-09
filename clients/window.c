@@ -72,6 +72,10 @@ typedef void *EGLContext;
 
 #include "window.h"
 
+#include <sys/types.h>
+#include "ivi-application-client-protocol.h"
+#define IVI_SURFACE_ID 9000
+
 struct shm_pool;
 
 struct global {
@@ -133,6 +137,7 @@ struct display {
 
 	int has_rgb565;
 	int seat_version;
+	struct ivi_application *ivi_application;
 };
 
 struct window_output {
@@ -246,6 +251,7 @@ struct window {
 	struct xdg_popup *xdg_popup;
 
 	struct window *parent;
+	struct ivi_surface *ivi_surface;
 
 	struct window_frame *frame;
 
@@ -1374,6 +1380,20 @@ surface_create_surface(struct surface *surface, uint32_t flags)
 	struct display *display = surface->window->display;
 	struct rectangle allocation = surface->allocation;
 
+	if (display->ivi_application)
+	{
+		if (!surface->toysurface) {
+			uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
+			surface->window->ivi_surface =
+				ivi_application_surface_create(display->ivi_application,
+							       id_ivisurf, surface->surface);
+			if (surface->window->ivi_surface == NULL) {
+				fprintf(stderr, "Failed to create ivi_client_surface\n");
+				abort();
+			}
+		}
+	}
+
 	if (!surface->toysurface && display->dpy &&
 	    surface->buffer_type == WINDOW_BUFFER_TYPE_EGL_WINDOW) {
 		surface->toysurface =
@@ -1477,6 +1497,12 @@ surface_destroy(struct surface *surface)
 	if (surface->toysurface)
 		surface->toysurface->destroy(surface->toysurface);
 
+	if (surface->window->display->ivi_application)
+	{
+		ivi_surface_destroy(surface->window->ivi_surface);
+		ivi_application_destroy(surface->window->display->ivi_application);
+	}
+
 	wl_list_remove(&surface->link);
 	free(surface);
 }
@@ -1491,7 +1517,7 @@ window_destroy(struct window *window)
 
 	wl_list_remove(&window->redraw_task.link);
 
-	wl_list_for_each(input, &display->input_list, link) {	  
+	wl_list_for_each(input, &display->input_list, link) {
 		if (input->touch_focus == window)
 			input->touch_focus = NULL;
 		if (input->pointer_focus == window)
@@ -2946,7 +2972,7 @@ touch_handle_down(void *data, struct wl_touch *wl_touch,
 			wl_list_insert(&input->touch_point_list, &tp->link);
 
 			if (widget->touch_down_handler)
-				(*widget->touch_down_handler)(widget, input, 
+				(*widget->touch_down_handler)(widget, input,
 							      serial, time, id,
 							      sx, sy,
 							      widget->user_data);
@@ -4349,7 +4375,7 @@ window_create_internal(struct display *display, int custom)
 	surface = surface_create(window);
 	window->main_surface = surface;
 
-	assert(custom || display->xdg_shell);
+	assert(custom || display->xdg_shell || display->ivi_application);
 
 	window->custom = custom;
 	window->preferred_format = WINDOW_PREFERRED_FORMAT_NONE;
@@ -4372,14 +4398,17 @@ window_create(struct display *display)
 
 	window = window_create_internal(display, 0);
 
-	window->xdg_surface =
-		xdg_shell_get_xdg_surface(window->display->xdg_shell,
-					  window->main_surface->surface);
-	fail_on_null(window->xdg_surface);
+	if (window->display->xdg_shell)
+	{
+		window->xdg_surface =
+			xdg_shell_get_xdg_surface(window->display->xdg_shell,
+						  window->main_surface->surface);
+		fail_on_null(window->xdg_surface);
 
-	xdg_surface_set_user_data(window->xdg_surface, window);
-	xdg_surface_add_listener(window->xdg_surface,
-				 &xdg_surface_listener, window);
+		xdg_surface_set_user_data(window->xdg_surface, window);
+		xdg_surface_add_listener(window->xdg_surface,
+					 &xdg_surface_listener, window);
+	}
 
 	return window;
 }
@@ -4632,19 +4661,22 @@ window_show_menu(struct display *display,
 
 	frame_interior(menu->frame, &ix, &iy, NULL, NULL);
 
-	window->xdg_popup = xdg_shell_get_xdg_popup(display->xdg_shell,
-						    window->main_surface->surface,
-						    parent->main_surface->surface,
-						    input->seat,
-						    display_get_serial(window->display),
-						    window->x - ix,
-						    window->y - iy,
-						    0);
-	fail_on_null(window->xdg_popup);
+	if (display->xdg_shell)
+	{
+		window->xdg_popup = xdg_shell_get_xdg_popup(display->xdg_shell,
+							    window->main_surface->surface,
+							    parent->main_surface->surface,
+							    input->seat,
+							    display_get_serial(window->display),
+							    window->x - ix,
+							    window->y - iy,
+							    0);
+		fail_on_null(window->xdg_popup);
 
-	xdg_popup_set_user_data(window->xdg_popup, window);
-	xdg_popup_add_listener(window->xdg_popup,
-			       &xdg_popup_listener, window);
+		xdg_popup_set_user_data(window->xdg_popup, window);
+		xdg_popup_add_listener(window->xdg_popup,
+				       &xdg_popup_listener, window);
+	}
 }
 
 void
@@ -5089,6 +5121,11 @@ registry_handle_global(void *data, struct wl_registry *registry, uint32_t id,
 			wl_registry_bind(registry, id,
 					 &wl_subcompositor_interface, 1);
 	}
+	else if (strcmp(interface, "ivi_application") == 0) {
+		d->ivi_application =
+			wl_registry_bind(registry, id,
+					 &ivi_application_interface, 1);
+	}
 
 	if (d->global_handler)
 		d->global_handler(d, id, interface, version, d->user_data);
@@ -5397,6 +5434,9 @@ display_destroy(struct display *display)
 	wl_registry_destroy(display->registry);
 
 	close(display->epoll_fd);
+
+	if (display->ivi_application)
+		wl_display_roundtrip(display->display);
 
 	if (!(display->display_fd_events & EPOLLERR) &&
 	    !(display->display_fd_events & EPOLLHUP))
