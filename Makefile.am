@@ -363,6 +363,11 @@ libexec_PROGRAMS +=				\
 	weston-keyboard				\
 	weston-simple-im
 
+if ENABLE_IVI_SHELL
+libexec_PROGRAMS +=				\
+	weston-ivi-shell-user-interface
+endif
+
 demo_clients =					\
 	weston-flower				\
 	weston-image				\
@@ -583,6 +588,16 @@ nodist_weston_desktop_shell_SOURCES =			\
 	protocol/desktop-shell-protocol.c
 weston_desktop_shell_LDADD = libtoytoolkit.la
 weston_desktop_shell_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
+
+if ENABLE_IVI_SHELL
+weston_ivi_shell_user_interface_SOURCES = clients/ivi-shell-user-interface.c
+nodist_weston_ivi_shell_user_interface_SOURCES =			\
+	protocol/ivi-hmi-controller-client-protocol.h			\
+	protocol/ivi-hmi-controller-protocol.c				\
+	protocol/ivi-application-protocol.c
+weston_ivi_shell_user_interface_LDADD = libtoytoolkit.la
+weston_ivi_shell_user_interface_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
+endif
 
 if BUILD_FULL_GL_CLIENTS
 demo_clients += weston-gears

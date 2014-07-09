@@ -152,6 +152,10 @@ struct hmi_controller
     int32_t                                 workspace_count;
     struct wl_array                     ui_widgets;
     int32_t                             is_initialized;
+
+    struct weston_compositor           *compositor;
+    struct weston_process               process;
+    struct wl_listener                  destroy_listener;
 };
 
 struct launcher_info
@@ -830,6 +834,9 @@ hmi_server_setting_create(void)
         shellSection, "application-layer-id", &setting->application_layer_id, 4000);
 
     setting->panel_height = 70;
+
+    weston_config_section_get_string(
+            shellSection, "ivi-shell-user-interface", &setting->ivi_homescreen, NULL);
 
     weston_config_destroy(config);
 
@@ -1897,9 +1904,36 @@ bind_hmi_controller(struct wl_client *client,
 }
 
 static void
-launch_hmi_client(void *data)
+handle_hmi_client_process_sigchld(struct weston_process *proc, int status)
 {
-    /*Nothing to do here*/
+    proc->pid = 0;
+}
+
+static void
+hmi_client_destroy(struct wl_listener *listener, void *data)
+{
+    struct hmi_controller *hmi_ctrl =
+        container_of(listener, struct hmi_controller, destroy_listener);
+
+    kill(hmi_ctrl->process.pid, SIGTERM);
+    hmi_ctrl->process.pid = 0;
+}
+
+static void
+launch_hmi_client_process(void *data)
+{
+    struct hmi_controller *hmi_ctrl =
+        (struct hmi_controller *)data;
+
+    weston_client_launch(hmi_ctrl->compositor,
+                         &hmi_ctrl->process,
+                         hmi_ctrl->hmi_setting->ivi_homescreen,
+                         handle_hmi_client_process_sigchld);
+
+    hmi_ctrl->destroy_listener.notify = hmi_client_destroy;
+    wl_signal_add(&hmi_ctrl->compositor->destroy_signal, &hmi_ctrl->destroy_listener);
+
+    free(hmi_ctrl->hmi_setting->ivi_homescreen);
 }
 
 /*****************************************************************************
@@ -1911,6 +1945,7 @@ module_init(struct weston_compositor *ec,
             int *argc, char *argv[])
 {
     struct hmi_controller *hmi_ctrl = hmi_controller_create(ec);
+    hmi_ctrl->compositor = ec;
 
     if (wl_global_create(ec->wl_display,
                  &ivi_hmi_controller_interface, 1,
@@ -1919,7 +1954,7 @@ module_init(struct weston_compositor *ec,
     }
 
     struct wl_event_loop *loop = wl_display_get_event_loop(ec->wl_display);
-    wl_event_loop_add_idle(loop, launch_hmi_client, ec);
+    wl_event_loop_add_idle(loop, launch_hmi_client_process, hmi_ctrl);
 
     return 0;
 }
