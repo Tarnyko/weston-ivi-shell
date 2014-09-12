@@ -740,7 +740,8 @@ ivi_shell_la_SOURCES =		\
 	ivi-shell/ivi-layout.h
 nodist_ivi_shell_la_SOURCES =				\
 	protocol/ivi-application-protocol.c		\
-	protocol/ivi-application-server-protocol.h
+	protocol/ivi-application-server-protocol.h	\
+	protocol/xdg-shell-protocol.c
 
 BUILT_SOURCES += $(nodist_ivi_shell_la_SOURCES)
 

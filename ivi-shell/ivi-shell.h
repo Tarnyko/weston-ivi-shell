@@ -32,4 +32,5 @@ struct ivi_shell
     struct weston_compositor *compositor;
 
     struct wl_list ivi_surface_list; /* struct ivi_shell_surface::link */
+	int last_xdg_surface_id;
 };

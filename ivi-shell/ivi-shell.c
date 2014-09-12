@@ -46,6 +46,9 @@
 #include "ivi-application-server-protocol.h"
 #include "ivi-layout.h"
 
+#include "xdg-shell-server-protocol.h"
+#define XDG_SURFACE_ID 9000
+
 #include "../shared/os-compatibility.h"
 
 struct ivi_shell_surface
@@ -142,9 +145,134 @@ surface_destroy(struct wl_client *client, struct wl_resource *resource)
     wl_resource_destroy(resource);
 }
 
-static const struct ivi_surface_interface surface_implementation = {
+static const struct ivi_surface_interface ivi_surface_implementation = {
     surface_destroy,
 };
+
+/**
+ * 
+ */
+
+static void
+xdg_surface_destroy(struct wl_client *client,
+		    struct wl_resource *resource)
+{
+	wl_resource_destroy(resource);
+}
+
+static void
+xdg_surface_set_transient_for(struct wl_client *client,
+                             struct wl_resource *resource,
+                             struct wl_resource *parent_resource)
+{
+}
+
+static void
+xdg_surface_set_margin(struct wl_client *client,
+			     struct wl_resource *resource,
+			     int32_t left,
+			     int32_t right,
+			     int32_t top,
+			     int32_t bottom)
+{
+}
+
+static void
+xdg_surface_set_title(struct wl_client *client,
+			struct wl_resource *resource, const char *title)
+{
+}
+
+static void
+xdg_surface_set_app_id(struct wl_client *client,
+		       struct wl_resource *resource,
+		       const char *app_id)
+{
+}
+
+static void
+xdg_surface_move(struct wl_client *client, struct wl_resource *resource,
+		 struct wl_resource *seat_resource, uint32_t serial)
+{
+}
+
+static void
+xdg_surface_resize(struct wl_client *client, struct wl_resource *resource,
+		   struct wl_resource *seat_resource, uint32_t serial,
+		   uint32_t edges)
+{
+}
+
+static void
+xdg_surface_set_output(struct wl_client *client,
+		       struct wl_resource *resource,
+		       struct wl_resource *output_resource)
+{
+}
+
+static void
+xdg_surface_request_change_state(struct wl_client *client,
+				 struct wl_resource *resource,
+				 uint32_t state,
+				 uint32_t value,
+				 uint32_t serial)
+{
+}
+
+static void
+xdg_surface_ack_change_state(struct wl_client *client,
+			     struct wl_resource *resource,
+			     uint32_t state,
+			     uint32_t value,
+			     uint32_t serial)
+{
+}
+
+static void
+xdg_surface_set_minimized(struct wl_client *client,
+			    struct wl_resource *resource)
+{
+	struct ivi_shell_surface *ivisurf = wl_resource_get_user_data(resource);
+	void *handle;
+	int32_t (*fct)(struct ivi_layout_surface *, int32_t);
+	int32_t (*fct2)(void);
+
+	if (!ivisurf)
+		return;
+
+	handle = dlopen (MODULEDIR "/ivi-layout.so", RTLD_NOW | RTLD_LOCAL);
+	fct = dlsym (handle, "ivi_layout_surfaceSetVisibility");
+	fct2 = dlsym (handle, "ivi_layout_commitChanges");
+
+	if (!handle)
+		return;
+	if (!fct || !fct2) {
+		dlclose (handle);
+		return;
+	}
+
+	(*fct)(ivisurf->layout_surface, 0);
+	(*fct2)();
+	dlclose (handle);
+}
+
+static const struct xdg_surface_interface xdg_surface_implementation = {
+	xdg_surface_destroy,
+	xdg_surface_set_transient_for,
+	xdg_surface_set_margin,
+	xdg_surface_set_title,
+	xdg_surface_set_app_id,
+	xdg_surface_move,
+	xdg_surface_resize,
+	xdg_surface_set_output,
+	xdg_surface_request_change_state,
+	xdg_surface_ack_change_state,
+	xdg_surface_set_minimized
+};
+
+/**
+ * 
+ */
 
 static struct ivi_shell_surface *
 is_surf_in_surfaces(struct wl_list *list_surf, uint32_t id_surface)
@@ -184,7 +312,8 @@ application_surface_create(struct wl_client *client,
     struct ivi_shell_surface *ivisurf = NULL;
     struct ivi_layout_surface *layout_surface = NULL;
     struct weston_surface *weston_surface = wl_resource_get_user_data(surface_resource);
-    struct wl_resource *res;
+    struct wl_resource *res_ivi;
+    struct wl_resource *res_xdg;
     int32_t warn_idx = -1;
 
     if (weston_surface != NULL) {
@@ -206,26 +335,36 @@ application_surface_create(struct wl_client *client,
         warn_idx = 0;
     }
 
-    res = wl_resource_create(client, &ivi_surface_interface, 1, id);
-    if (res == NULL) {
+    res_ivi = wl_resource_create(client, &ivi_surface_interface, 1, id);
+    if (res_ivi == NULL) {
         wl_client_post_no_memory(client);
         return;
     }
 
     if (warn_idx >= 0) {
-        wl_resource_set_implementation(res, &surface_implementation,
+        wl_resource_set_implementation(res_ivi, &ivi_surface_implementation,
                                        NULL, NULL);
-        ivi_surface_send_warning(res,
+        ivi_surface_send_warning(res_ivi,
                                  warning_strings[warn_idx].warning_code,
                                  warning_strings[warn_idx].msg);
         return;
     }
 
+    res_xdg = wl_resource_create(client, &xdg_surface_interface, 1, id);
+    if (res_xdg == NULL) {
+        wl_client_post_no_memory(client);
+        return;
+    }
+
+    if (warn_idx >= 0)
+        wl_resource_set_implementation(res_xdg, &xdg_surface_implementation,
+                                       NULL, NULL);
+
     ivisurf = is_surf_in_surfaces(&shell->ivi_surface_list, id_surface);
     if (ivisurf == NULL) {
         ivisurf = zalloc(sizeof *ivisurf);
         if (ivisurf == NULL) {
-            wl_resource_post_no_memory(res);
+            wl_resource_post_no_memory(res_ivi);
             return;
         }
 
@@ -244,7 +383,9 @@ application_surface_create(struct wl_client *client,
     weston_surface->configure = ivi_shell_surface_configure;
     weston_surface->configure_private = ivisurf;
 
-    wl_resource_set_implementation(res, &surface_implementation,
+    wl_resource_set_implementation(res_ivi, &ivi_surface_implementation,
+                                   ivisurf, NULL);
+    wl_resource_set_implementation(res_xdg, &xdg_surface_implementation,
                                    ivisurf, NULL);
 }
 
@@ -263,6 +404,70 @@ bind_ivi_application(struct wl_client *client,
 
     wl_resource_set_implementation(resource,
                                    &application_implementation,
+                                   shell, NULL);
+}
+
+/**
+ * xdg-shell compatibility layer
+ */
+
+static void
+xdg_use_unstable_version(struct wl_client *client,
+			 struct wl_resource *resource,
+			 int32_t version)
+{
+}
+
+static void
+xdg_get_xdg_surface(struct wl_client *client,
+		    struct wl_resource *resource,
+		    uint32_t id,
+		    struct wl_resource *surface_resource)
+{
+    struct ivi_shell *shell = wl_resource_get_user_data(resource);
+
+	/* start from XDG_SURFACE_ID, and increment the counter */
+	application_surface_create(client, resource, shell->last_xdg_surface_id,
+	                           surface_resource, id);
+	shell->last_xdg_surface_id++;
+}
+
+static void
+xdg_get_xdg_popup(struct wl_client *client,
+		  struct wl_resource *resource,
+		  uint32_t id,
+		  struct wl_resource *surface_resource,
+		  struct wl_resource *parent_resource,
+		  struct wl_resource *seat_resource,
+		  uint32_t serial,
+		  int32_t x, int32_t y, uint32_t flags)
+{
+}
+
+static void
+xdg_pong(struct wl_client *client,
+	 struct wl_resource *resource, uint32_t serial)
+{
+}
+
+static const struct xdg_shell_interface xdg_implementation = {
+	xdg_use_unstable_version,
+	xdg_get_xdg_surface,
+	xdg_get_xdg_popup,
+	xdg_pong
+};
+
+static void
+bind_xdg_shell(struct wl_client *client,
+                void *data, uint32_t version, uint32_t id)
+{
+    struct ivi_shell *shell = data;
+    struct wl_resource *resource = NULL;
+
+    resource = wl_resource_create(client, &xdg_shell_interface, 1, id);
+
+    wl_resource_set_implementation(resource,
+                                   &xdg_implementation,
                                    shell, NULL);
 }
 
@@ -288,6 +493,7 @@ static void
 init_ivi_shell(struct weston_compositor *compositor, struct ivi_shell *shell)
 {
     shell->compositor = compositor;
+	shell->last_xdg_surface_id = XDG_SURFACE_ID;
 
     wl_list_init(&shell->ivi_surface_list);
 }
@@ -368,6 +574,11 @@ module_init(struct weston_compositor *compositor,
 
     if (wl_global_create(compositor->wl_display, &ivi_application_interface, 1,
                          shell, bind_ivi_application) == NULL) {
+        return -1;
+    }
+
+    if (wl_global_create(compositor->wl_display, &xdg_shell_interface, 1,
+                         shell, bind_xdg_shell) == NULL) {
         return -1;
     }
 
