@@ -232,6 +232,9 @@ static void
 xdg_surface_set_minimized(struct wl_client *client,
 			    struct wl_resource *resource)
 {
+	/* we are not supposed to call ivi_layout_* functions directly ;
+	   this should go to an ivi-controller instead. Disabling this. */
+	/*
 	struct ivi_shell_surface *ivisurf = wl_resource_get_user_data(resource);
 	void *handle;
 	int32_t (*fct)(struct ivi_layout_surface *, int32_t);
@@ -254,6 +257,7 @@ xdg_surface_set_minimized(struct wl_client *client,
 	(*fct)(ivisurf->layout_surface, 0);
 	(*fct2)();
 	dlclose (handle);
+	*/
 }
 
 static const struct xdg_surface_interface xdg_surface_implementation = {
